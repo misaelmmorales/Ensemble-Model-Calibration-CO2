@@ -1,2 +1,7 @@
 
 tests/results/surrogate.pth
+data/X_data.npy
+data/y1_data.npy
+data/y2_data.npy
+data/c_data.npy
+data/pix2vid-v2.weights.h5
