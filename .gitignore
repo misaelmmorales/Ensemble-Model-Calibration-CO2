@@ -5,3 +5,8 @@ data/y1_data.npy
 data/y2_data.npy
 data/c_data.npy
 data/pix2vid-v2.weights.h5
+data/fno_model.pth
+data/simulations_64x64x28.npz
+
+simulations/**/*.mat
+data/u_train_*.npy
