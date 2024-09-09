@@ -23,7 +23,7 @@ facies = np.zeros((len(fnames), 4, NX, NY, NZ))
 for i in tqdm(range(len(fnames))):
     f = np.load(fnames[i]).reshape(256,256,128)
     f1 = resize(f[...,48:56],   (NX,NY,NZ), anti_aliasing=True, preserve_range=True)
-    f2 = resize(f[...,48:76],   (NX,NY,NZ), anti_aliasing=True, preserve_range=True)
+    f2 = resize(f[...,68:76],   (NX,NY,NZ), anti_aliasing=True, preserve_range=True)
     f3 = resize(f[...,88:96],   (NX,NY,NZ), anti_aliasing=True, preserve_range=True)
     f4 = resize(f[...,108:116], (NX,NY,NZ), anti_aliasing=True, preserve_range=True)
     ff = np.stack([f1, f2, f3, f4], axis=0)
@@ -46,6 +46,43 @@ print('Norm: {} | min = {:.3f} = {:.3f} | max = {:.3f} = {:.3f}'.format(perm_nor
 
 np.savez('data_1272_64x64x8.npz', facies=facies, facies_norm=facies_norm, perm=perm, perm_norm=perm_norm)
 sio.savemat('data_1272_64x64x8.mat', {'perm':perm_norm, 'facies':facies_norm})
+
+#################################### 3D BIG perms|facies ####################################
+NR, NX, NY, NZ = 1272, 128, 128, 16
+
+fnames = []
+for root, dirs, files in os.walk('/mnt/e/MLTrainingImages'):
+    for f in files:
+        if f.endswith('.npy'):
+            fnames.append(os.path.join(root, f))
+print('# TIs:', len(fnames))
+
+facies = np.zeros((len(fnames), 4, NX, NY, NZ))
+for i in tqdm(range(len(fnames))):
+    f = np.load(fnames[i]).reshape(256,256,128)
+    f1 = resize(f[...,48:64],   (NX,NY,NZ), anti_aliasing=True, preserve_range=True)
+    f2 = resize(f[...,68:84],   (NX,NY,NZ), anti_aliasing=True, preserve_range=True)
+    f3 = resize(f[...,88:104],  (NX,NY,NZ), anti_aliasing=True, preserve_range=True)
+    f4 = resize(f[...,108:124], (NX,NY,NZ), anti_aliasing=True, preserve_range=True)
+    ff = np.stack([f1, f2, f3, f4], axis=0)
+    facies[i] = ff
+facies = facies.reshape(NR, NX, NY, NZ)
+print(facies.shape)
+
+kmin, kmax = np.log10(0.05), np.log10(3000)
+perm = np.moveaxis(np.rot90(np.array(pd.read_csv('perm_1272_128x128x16.csv')).reshape(NX,NY,NZ,NR,order='F'), axes=(0,1)), -1, 0)
+perm = MinMaxScaler((kmin,kmax)).fit_transform(perm.reshape(NR,-1)).reshape(perm.shape)
+print('Perm: {} | min = {:.3f} = {:.3f} | max = {:.3f} = {:.3f}'.format(perm.shape, perm.min(), 10**perm.min(), perm.max(), 10**perm.max()))
+
+facies_norm = MinMaxScaler((0.05, 5)).fit_transform(facies.round(0).reshape(NR,-1)).reshape(facies.shape)
+print('Facies: {} | min = {:.3f} | max = {:.3f}'.format(facies_norm.shape, facies_norm.min(), facies_norm.max()))
+
+perm_norm = np.log10(10**perm * facies_norm)
+perm_norm = MinMaxScaler((kmin,kmax)).fit_transform(perm_norm.reshape(NR,-1)).reshape(perm_norm.shape)
+print('Norm: {} | min = {:.3f} = {:.3f} | max = {:.3f} = {:.3f}'.format(perm_norm.shape, perm_norm.min(), 10**perm_norm.min(), perm_norm.max(), 10**perm_norm.max()))
+
+np.savez('data_1272_128x128x16.npz', facies=facies, facies_norm=facies_norm, perm=perm, perm_norm=perm_norm)
+sio.savemat('data_1272_128x128x16.mat', {'perm':perm_norm, 'facies':facies_norm})
 
 ###################################### 2D perms|facies ######################################
 fnames = []

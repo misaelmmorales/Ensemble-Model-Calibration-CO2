@@ -9,9 +9,17 @@ data/fno_model.pth
 data/simulations_64x64x28.npz
 
 simulations/**/*.mat
+simulations2D/**/*.mat
 simulations3D/**/*.mat
+simulations3D_big/**/*.mat
+
+simulations2D/data_*.*
+simulations2D/perm_*.*
 
 simulations3D/data_*.*
 simulations3D/perm_*.*
+
+simulations3D_big/data_*.*
+simulations3D_big/perm_*.*
 
 data/u_train_*.npy
