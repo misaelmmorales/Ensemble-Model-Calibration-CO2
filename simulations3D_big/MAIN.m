@@ -4,8 +4,8 @@ mrstModule add co2lab mimetic matlab_bgl
 mrstModule add ad-core ad-props ad-blackoil mrst-gui
 clear; clc
 
-nx = 128;     ny = 128;     nz = 16;
-dx = 19.5312; dy = 19.5312; dz = 9.3750;
+nx = 128;   ny = 128;   nz = 16;
+dx = 31.25; dy = 31.25; dz = 7.5;
 G = cartGrid([nx,ny,nz], [nx*dy, ny*dy, nz*dz]*meter);
 G.nodes.coords(:,3) = G.nodes.coords(:,3)+1000;
 G = computeGeometry(G);
@@ -64,20 +64,25 @@ Tinj  = 10*year;
 dTinj = year/12; 
 nTinj = Tinj / dTinj;
 
-Tmon  = 250*year;
-dTmon = 5*year;
+Tmon  = 10*year;
+dTmon = year/12;
 nTmon = Tmon / dTmon;
 
 dT = rampupTimesteps(Tinj, dTinj, 6);
 schedule.step.val     = [dT                ; repmat(dTmon, nTmon, 1)];
 schedule.step.control = [ones(numel(dT), 1); ones(nTmon, 1) * 2];
 
-lsolve  = BackslashSolverAD('maxIterations', 100, 'tolerance', 1e-2);
+lsolve  = BackslashSolverAD('maxIterations', 20, 'tolerance', 1e-2);
 nlsolve = NonLinearSolver('useRelaxation'  , true, ...
                           'maxTimestepCuts', 5   , ...
                           'maxIterations'  , 12  , ...
                           'useLinesearch'  , true, ...
                           'LinearSolver'   , lsolve);
+
+
+
+i = 1001;
+states = make_simulation(i, G, perm, fluid, schedule, initState, bc, nlsolve);
 
 %% Run parallel simulations
 
