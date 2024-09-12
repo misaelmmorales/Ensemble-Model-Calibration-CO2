@@ -1,16 +1,20 @@
-function [states] = make_simulation(i, G, perm, fluid, schedule, initState, bc, nlsolve)    
+function [states, W, rock] = make_simulation(i, G, perm, fluid, schedule, initState, bc, nlsolve)    
     % make rock
     kk = 10.^perm(i,:)' * milli * darcy;
     k(:,1) = kk;
     k(:,2) = kk;
     k(:,3) = 0.25 * kk;
     rock = makeRock(G, k, 0.2);
-    
+   
     % make wells
-    wlocs = [16, 16, 48, 48; 
-             16, 48, 48, 16];
-    rinj = 0.5 * mega * 1e3 / fluid.rhoGS / year;
+    w1 = G.cartDims(1) * 0.25;
+    w2 = G.cartDims(1) * 0.75;
     wz = G.cartDims(3);
+
+    wlocs = [w1, w1, w2, w2; 
+             w1, w2, w2, w1];
+
+    rinj = 0.5 * mega * 1e3 / fluid.rhoGS / year;
 
     W = [];
     for i=1:4
@@ -32,8 +36,7 @@ function [states] = make_simulation(i, G, perm, fluid, schedule, initState, bc, 
     end
 
     model = TwoPhaseWaterGasModel(G, rock, fluid);
-    [~, states] = simulateScheduleAD(initState, model, schedule, ...
-                                     'NonLinearSolver', nlsolve);
+    [~, states] = simulateScheduleAD(initState, model, schedule);%, 'NonLinearSolver', nlsolve);
 
 end
 
