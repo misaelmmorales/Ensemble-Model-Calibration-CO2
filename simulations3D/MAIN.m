@@ -5,14 +5,25 @@ mrstModule add co2lab mimetic matlab_bgl
 mrstModule add ad-core ad-props ad-blackoil mrst-gui
 clear;clc
 
-nx = 64;      ny = 64;      nz = 8;
-dx = 39.0625; dy = 39.0625; dz = 18.75;
+nx = 64; ny = 64; nz = 8;
+dx = 50; dy = 50; dz = 25;
 G = cartGrid([nx,ny,nz], [nx*dy, ny*dy, nz*dz]*meter);
 G.nodes.coords(:,3) = G.nodes.coords(:,3)+1000;
 G = computeGeometry(G);
 
 perm = load('data_1272_64x64x8.mat').perm;
 perm = reshape(perm, [1272, nx*ny*nz]);
+
+i = 1234;
+kk = 10.^perm(i,:)' * milli * darcy;
+k(:,1) = kk;
+k(:,2) = kk;
+k(:,3) = 0.25 * kk;
+rock = makeRock(G, k, 0.2);
+
+figure(1); clf; 
+plotCellData(G, log10(convertTo(rock.perm(:,1), milli*darcy)));
+colormap jet; colorbar; view(-45,70)
 
 %% Initial State
 gravity on;  g = gravity;
@@ -62,24 +73,26 @@ p_face_pressure = initState.pressure(bc_cell_ix);
 bc = addBC(bc, bc_face_ix, 'pressure', p_face_pressure, 'sat', [1,0]);
 
 %% Schedule
-Tinj  = 10*year;
+Tinj  = 5*year;
 dTinj = year/12; 
 nTinj = Tinj / dTinj;
 
-Tmon  = 250*year;
-dTmon = 5*year;
+Tmon  = 100*year;
+dTmon = year;
 nTmon = Tmon / dTmon;
 
-dT = rampupTimesteps(Tinj, dTinj, 6);
+dT = rampupTimesteps(Tinj, dTinj, 10);
 schedule.step.val     = [dT                ; repmat(dTmon, nTmon, 1)];
 schedule.step.control = [ones(numel(dT), 1); ones(nTmon, 1) * 2];
 
-lsolve  = BackslashSolverAD('maxIterations', 100, 'tolerance', 1e-2);
+lsolve  = BackslashSolverAD('maxIterations', 50, 'tolerance', 1e-2);
 nlsolve = NonLinearSolver('useRelaxation'  , true, ...
                           'maxTimestepCuts', 5   , ...
-                          'maxIterations'  , 12  , ...
+                          'maxIterations'  , 8  , ...
                           'useLinesearch'  , true, ...
                           'LinearSolver'   , lsolve);
+
+states = make_simulation(i, G, perm, fluid, schedule, initState, bc, nlsolve);
 
 %% Run parallel simulations
 
@@ -101,6 +114,6 @@ plotWell(G,W,'color','k'); view(-40,75); colormap jet; colorbar
 
 figure(3); clf; 
 plotToolbar(G, states); 
-plotWell(G,W,'color','k'); 
+%plotWell(G,W,'color','k'); 
 view(-40,75); colormap jet; colorbar
 %}
