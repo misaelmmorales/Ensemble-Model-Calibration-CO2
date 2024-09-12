@@ -5,6 +5,7 @@ mrstModule add co2lab mimetic matlab_bgl
 mrstModule add ad-core ad-props ad-blackoil mrst-gui
 clear;clc
 
+%% Grid
 nx = 64; ny = 64; nz = 8;
 dx = 50; dy = 50; dz = 25;
 G = cartGrid([nx,ny,nz], [nx*dy, ny*dy, nz*dz]*meter);
@@ -13,17 +14,6 @@ G = computeGeometry(G);
 
 perm = load('data_1272_64x64x8.mat').perm;
 perm = reshape(perm, [1272, nx*ny*nz]);
-
-i = 1234;
-kk = 10.^perm(i,:)' * milli * darcy;
-k(:,1) = kk;
-k(:,2) = kk;
-k(:,3) = 0.25 * kk;
-rock = makeRock(G, k, 0.2);
-
-figure(1); clf; 
-plotCellData(G, log10(convertTo(rock.perm(:,1), milli*darcy)));
-colormap jet; colorbar; view(-45,70)
 
 %% Initial State
 gravity on;  g = gravity;
@@ -72,19 +62,7 @@ bc_cell_ix = sum(G.faces.neighbors(bc_face_ix, :), 2);
 p_face_pressure = initState.pressure(bc_cell_ix);
 bc = addBC(bc, bc_face_ix, 'pressure', p_face_pressure, 'sat', [1,0]);
 
-%% Schedule
-Tinj  = 5*year;
-dTinj = year/12; 
-nTinj = Tinj / dTinj;
-
-Tmon  = 100*year;
-dTmon = year;
-nTmon = Tmon / dTmon;
-
-dT = rampupTimesteps(Tinj, dTinj, 10);
-schedule.step.val     = [dT                ; repmat(dTmon, nTmon, 1)];
-schedule.step.control = [ones(numel(dT), 1); ones(nTmon, 1) * 2];
-
+%% Nonlinear solver
 lsolve  = BackslashSolverAD('maxIterations', 50, 'tolerance', 1e-2);
 nlsolve = NonLinearSolver('useRelaxation'  , true, ...
                           'maxTimestepCuts', 5   , ...
@@ -92,17 +70,30 @@ nlsolve = NonLinearSolver('useRelaxation'  , true, ...
                           'useLinesearch'  , true, ...
                           'LinearSolver'   , lsolve);
 
-states = make_simulation(i, G, perm, fluid, schedule, initState, bc, nlsolve);
+%% Schedule
+Tinj  = 5*year;
+dTinj = year/12; 
+nTinj = Tinj / dTinj;
+
+Tmon  = 245*year;
+dTmon = 5*year;
+nTmon = Tmon / dTmon;
+
+tsteps = [Tinj, dTinj, nTinj; 
+          Tmon, dTmon, nTmon];
+
+dT = rampupTimesteps(Tinj, dTinj, 6);
+schedule.step.val     = [dT                ; repmat(dTmon, nTmon, 1)];
+schedule.step.control = [ones(numel(dT), 1); ones(nTmon, 1) * 2];
 
 %% Run parallel simulations
-
 parfor i=1:4
-    [states] = make_simulation(i, G, perm, fluid, schedule, initState, bc, nlsolve);
+    [states,W,rock] = make_simulation(i, G, perm, fluid, schedule, initState, bc, nlsolve);
     parsave(sprintf('states/states_%d', i-1), states);
     fprintf('Simulation %i done\n', i-1)
 end
 disp('... All Done!');
-   
+
 %% Visualize
 %{
 figure(1); clf; plotCellData(G, G.cells.centroids(:,3)); 
@@ -114,6 +105,6 @@ plotWell(G,W,'color','k'); view(-40,75); colormap jet; colorbar
 
 figure(3); clf; 
 plotToolbar(G, states); 
-%plotWell(G,W,'color','k'); 
+plotWell(G,W,'color','k'); 
 view(-40,75); colormap jet; colorbar
 %}
