@@ -15,6 +15,8 @@ G = computeGeometry(G);
 perm = load('data_1272_64x64x8.mat').perm;
 perm = reshape(perm, [1272, nx*ny*nz]);
 
+figure(1); clf; plotCellData(G, G.cells.centroids(:,3)); view(-45,70); colormap jet
+
 %% Initial State
 gravity on;  g = gravity;
 rhow = 1000;
@@ -75,16 +77,30 @@ Tinj  = 5*year;
 dTinj = year/12; 
 nTinj = Tinj / dTinj;
 
-Tmon  = 245*year;
-dTmon = 5*year;
+Tmon  = 5*year;
+dTmon = year/12;
 nTmon = Tmon / dTmon;
 
 tsteps = [Tinj, dTinj, nTinj; 
           Tmon, dTmon, nTmon];
 
 dT = rampupTimesteps(Tinj, dTinj, 6);
+
 schedule.step.val     = [dT                ; repmat(dTmon, nTmon, 1)];
 schedule.step.control = [ones(numel(dT), 1); ones(nTmon, 1) * 2];
+
+%% Temporary single simulation
+
+i = 512;
+
+[states,W,rock] = make_simulation(i, G, perm, fluid, schedule, initState, bc, nlsolve);
+
+figure(2); clf; plotCellData(G, log10(convertTo(rock.perm(:,1), milli*darcy))); 
+plotWell(G,W,'color','k'); colormap jet; colorbar; view(-45,70)
+
+figure(3); clf; plotToolbar(G, states); plotWell(G,W); colormap jet; colorbar; view(-45,70)
+
+save('states.mat', 'states')
 
 %% Run parallel simulations
 parfor i=1:4
