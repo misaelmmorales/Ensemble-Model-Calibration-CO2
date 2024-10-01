@@ -1,9 +1,10 @@
 %% Main variables
+addpath 'D:\MATLAB\mrst-2024a'
 set(0,'DefaultFigureWindowStyle','docked')
 % Import MRST module
 mrstModule add co2lab mimetic matlab_bgl
 mrstModule add ad-core ad-props ad-blackoil mrst-gui
-clear;clc
+clear; clc
 
 %% Grid
 nx = 64; ny = 64; nz = 8;
@@ -12,10 +13,28 @@ G = cartGrid([nx,ny,nz], [nx*dy, ny*dy, nz*dz]*meter);
 G.nodes.coords(:,3) = G.nodes.coords(:,3)+1000;
 G = computeGeometry(G);
 
-perm = load('data_1272_64x64x8.mat').perm;
-perm = reshape(perm, [1272, nx*ny*nz]);
+%% Grid 2
+m = nx/2;
+[x,y] = meshgrid(0:2*m);
+
+T = 2 - 3*membrane(1,m) - 0.2*sin(pi*x/12)*sin(pi*y/7)  - 0.2*sin(pi*(x+y)/5)   - 0.10*sin(pi*(x.*y)/100) - 0.1*rand(size(x));
+B = 2 - 3*membrane(1,m) - 0.2*sin(pi*x/15).*sin(pi*y/8) - 0.1*sin(pi*(x+y+5)/5) - 0.25*sin(pi*(x.*y)/80)  + 18.0;
+
+G = tensorGrid(0:2*m, 0:2*m, 0:nz);
+num = prod(G.cartDims(1:2)+1);
+for k=1:n+1
+   G.nodes.coords((1:num)+(k-1)*num,3) = T(:) + (k-1)/n*(B(:)-T(:));
+end
+clear x y T B;
+
+G.nodes.coords(:,1:2) = G.nodes.coords(:,1:2)*50;
+G.nodes.coords(:,3) = G.nodes.coords(:,3)*32 + 1000;
+G = computeGeometry(G);
 
 figure(1); clf; plotCellData(G, G.cells.centroids(:,3)); view(-45,70); colormap jet
+
+perm = load('data_1272_64x64x8.mat').perm;
+perm = reshape(perm, [1272, nx*ny*nz]);
 
 %% Initial State
 gravity on;  g = gravity;
@@ -74,11 +93,11 @@ nlsolve = NonLinearSolver('useRelaxation'  , true, ...
 
 %% Schedule
 Tinj  = 5*year;
-dTinj = year/12; 
+dTinj = year/12;
 nTinj = Tinj / dTinj;
 
-Tmon  = 5*year;
-dTmon = year/12;
+Tmon  = 100*year;
+dTmon = year;
 nTmon = Tmon / dTmon;
 
 tsteps = [Tinj, dTinj, nTinj; 
@@ -91,7 +110,7 @@ schedule.step.control = [ones(numel(dT), 1); ones(nTmon, 1) * 2];
 
 %% Temporary single simulation
 
-i = 512;
+i = 114;
 
 [states,W,rock] = make_simulation(i, G, perm, fluid, schedule, initState, bc, nlsolve);
 
