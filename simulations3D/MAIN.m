@@ -96,8 +96,8 @@ Tinj  = 5*year;
 dTinj = year/12;
 nTinj = Tinj / dTinj;
 
-Tmon  = 100*year;
-dTmon = year;
+Tmon  = 500*year;
+dTmon = 10*year;
 nTmon = Tmon / dTmon;
 
 tsteps = [Tinj, dTinj, nTinj; 
