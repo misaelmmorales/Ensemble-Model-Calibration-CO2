@@ -74,7 +74,7 @@ bcIx = G.cells.faces(I & J, 1);
 i = any(Gt.faces.neighbors==0, 2);  % find all outer faces
 I = i(Gt.cells.faces(:,1));         % vector of all faces of all cells, true if outer
 j = false(6,1);                     % mask, cells can at most have 6 faces,
-j(1:4)=true;                        %   extract east, west, north, south
+j(1:4)=true;                        % extract east, west, north, south
 J = j(Gt.cells.faces(:,2));         % vector of faces per cell, true if E,W,N,S
 bcIxVE = Gt.cells.faces(I & J, 1);
 

@@ -14,16 +14,14 @@ G.nodes.coords(:,3) = G.nodes.coords(:,3)+1000;
 G = computeGeometry(G);
 
 %% Grid 2
-m = nx/2;
-[x,y] = meshgrid(0:2*m);
+[x,y] = meshgrid(0:nx, 0:ny);
+T = 2 - 3*membrane(1, nx/2) - 0.5*sin(pi*x/12)*sin(pi*y/4)  - 0.2*sin(pi*(x+y)/5)   - 0.2*sin(pi*(x.*y)/100) - 0.2*rand(size(x));
+B = 2 - 2*membrane(1, ny/2) - 0.2*sin(pi*x/15).*sin(pi*y/5) - 0.2*sin(pi*(x+y+5)/5) - 0.2*sin(pi*(x.*y)/80)  + 20.0;
 
-T = 2 - 3*membrane(1,m) - 0.2*sin(pi*x/12)*sin(pi*y/7)  - 0.2*sin(pi*(x+y)/5)   - 0.10*sin(pi*(x.*y)/100) - 0.1*rand(size(x));
-B = 2 - 3*membrane(1,m) - 0.2*sin(pi*x/15).*sin(pi*y/8) - 0.1*sin(pi*(x+y+5)/5) - 0.25*sin(pi*(x.*y)/80)  + 18.0;
-
-G = tensorGrid(0:2*m, 0:2*m, 0:nz);
+G = tensorGrid(0:nx, 0:ny, 0:nz);
 num = prod(G.cartDims(1:2)+1);
-for k=1:n+1
-   G.nodes.coords((1:num)+(k-1)*num,3) = T(:) + (k-1)/n*(B(:)-T(:));
+for k=1:(nx/2 + 1)
+   G.nodes.coords((1:num)+(k-1)*num,3) = T(:) + (k-1) / (nx/2) * (B(:)-T(:));
 end
 clear x y T B;
 
@@ -31,7 +29,7 @@ G.nodes.coords(:,1:2) = G.nodes.coords(:,1:2)*50;
 G.nodes.coords(:,3) = G.nodes.coords(:,3)*32 + 1000;
 G = computeGeometry(G);
 
-figure(1); clf; plotCellData(G, G.cells.centroids(:,3)); view(-45,70); colormap jet
+figure(1); clf; plotCellData(G, G.cells.centroids(:,3)); colormap jet; view(-35,35)
 
 perm = load('data_1272_64x64x8.mat').perm;
 perm = reshape(perm, [1272, nx*ny*nz]);
@@ -108,18 +106,21 @@ dT = rampupTimesteps(Tinj, dTinj, 6);
 schedule.step.val     = [dT                ; repmat(dTmon, nTmon, 1)];
 schedule.step.control = [ones(numel(dT), 1); ones(nTmon, 1) * 2];
 
-%% Temporary single simulation
+%% 2D VE parameters
+[Gt, ~] = topSurfaceGrid(G);
+ii = any(Gt.faces.neighbors==0, 2);  % find all outer faces
+I = ii(Gt.cells.faces(:,1));         % vector of all faces of all cells, true if outer
+jj = false(6,1);                     % mask, cells can at most have 6 faces,
+jj(1:4) = true;                      % extract east, west, north, south
+J = jj(Gt.cells.faces(:,2));         % vector of faces per cell, true if E,W,N,S
+bcIxVE = Gt.cells.faces(I & J, 1);
+clear ii jj I J
 
-i = 666;
+%% TEMP
 
+i = 1234;
 [states,W,rock] = make_simulation(i, G, perm, fluid, schedule, initState, bc, nlsolve);
 
-figure(2); clf; plotCellData(G, log10(convertTo(rock.perm(:,1), milli*darcy))); 
-plotWell(G,W,'color','k'); colormap jet; colorbar; view(-45,70)
-
-figure(3); clf; plotToolbar(G, states); plotWell(G,W); colormap jet; colorbar; view(-45,70)
-
-save('states.mat', 'states')
 
 %% Run parallel simulations
 parfor i=1:4
