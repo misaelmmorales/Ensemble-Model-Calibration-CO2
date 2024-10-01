@@ -110,7 +110,7 @@ schedule.step.control = [ones(numel(dT), 1); ones(nTmon, 1) * 2];
 
 %% Temporary single simulation
 
-i = 114;
+i = 666;
 
 [states,W,rock] = make_simulation(i, G, perm, fluid, schedule, initState, bc, nlsolve);
 
