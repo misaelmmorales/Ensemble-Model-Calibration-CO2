@@ -1,6 +1,8 @@
 %% Main variables
-addpath 'D:\MATLAB\mrst-2024a'
 set(0,'DefaultFigureWindowStyle','docked')
+addpath 'D:\MATLAB\mrst-2024a'
+startup
+
 % Import MRST module
 mrstModule add co2lab mimetic matlab_bgl
 mrstModule add ad-core ad-props ad-blackoil mrst-gui
