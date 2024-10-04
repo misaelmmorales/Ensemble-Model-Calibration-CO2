@@ -122,7 +122,6 @@ clear ii jj I J
 
 i = 1234;
 [states,W,rock] = make_simulation(i, G, perm, fluid, schedule, initState, bc, nlsolve);
-
 save('states.mat', "states")
 
 %% Run parallel simulations
