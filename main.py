@@ -29,3 +29,17 @@ import keras
 import keras.backend as K
 from keras import Model
 from keras.layers import *
+
+def check_tf_gpu():
+    sys_info = tf.sysconfig.get_build_info()
+    kversion = keras.__version__
+    version, cuda, cudnn = tf.__version__, sys_info["cuda_version"], sys_info["cudnn_version"]
+    count = len(tf.config.experimental.list_physical_devices())
+    name  = [device.name for device in tf.config.experimental.list_physical_devices('GPU')]
+    print('-'*62)
+    print('------------------------ VERSION INFO ------------------------')
+    print('TF version: {} | Keras: {} | # Device(s) available: {}'.format(version, kversion, count))
+    print('TF Built with CUDA? {} | CUDA: {} | cuDNN: {}'.format(tf.test.is_built_with_cuda(), cuda, cudnn))
+    print(tf.config.list_physical_devices()[-1])
+    print('-'*62+'\n')
+    return None
