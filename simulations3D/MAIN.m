@@ -120,12 +120,12 @@ clear ii jj I J
 
 %% TEMP
 
-i = 1234;
+i = 1111;
 [states,W,rock] = make_simulation(i, G, perm, fluid, schedule, initState, bc, nlsolve);
 save('states.mat', "states")
 
 %% Run parallel simulations
-parfor i=1:1272
+parfor i=1:5
     [states,W,rock] = make_simulation(i, G, perm, fluid, schedule, initState, bc, nlsolve);
     parsave(sprintf('states/states_%d', i-1), states);
     fprintf('Simulation %i done\n', i-1)
